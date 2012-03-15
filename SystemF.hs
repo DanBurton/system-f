@@ -2,6 +2,7 @@
     GADTs
   , KindSignatures
   , FlexibleInstances
+  , EmptyDataDecls
   #-}
 
 module SystemF (
@@ -27,6 +28,7 @@ module SystemF (
   
   -- * Library
   , id'
+  , const'
   , succ'
   ) where
 
@@ -69,10 +71,15 @@ data Type :: * -> * where
   TyVar :: Char -> Type a
 
 instance Eq (Type a) where
-  NumTy == NumTy = True
-  (FunTy dom rng) == (FunTy dom' rng') = dom == dom' && rng == rng'
-  VTy{} == VTy{} = error "Equality is undefined on forall'd types" -- TODO
-  _ == _ = False
+  (==) = eqTy (['A' .. 'Z'] ++ ['a' .. 'z'])
+
+eqTy :: [Char] -> Type a -> Type a -> Bool
+eqTy _ NumTy NumTy = True
+eqTy cs (FunTy dom rng) (FunTy dom' rng') = eqTy cs dom dom' && eqTy cs rng rng'
+eqTy (c:cs) (VTy f) (VTy f') = eqTy cs (f (TyVar c)) (f' (TyVar c))
+eqTy [] _ _ = error "Contratulations, you've used up all of the characters. Impressive."
+eqTy _ (TyVar c) (TyVar c') = c == c'
+eqTy _ _ _ = False
 
 instance Show (Type a) where
   show = showTy ("XYZ" ++ ['A' .. 'W'])
@@ -86,7 +93,7 @@ showTy _ (TyVar t) = [t]
 
 ---------------------------------------------------------------------
 
-newtype V a b = V (Type a -> Term b)
+data V a b
 
 ---------------------------------------------------------------------
 
